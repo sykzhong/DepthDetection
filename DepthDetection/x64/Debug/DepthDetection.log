@@ -1,0 +1,3 @@
+﻿  DepthDetection.cpp
+e:\cloud\research\vision\depthdetection\depthdetection\depthdetection.cpp(114): warning C4244: “初始化”: 从“int”转换到“float”，可能丢失数据
+  DepthDetection.vcxproj -> E:\Cloud\Research\Vision\DepthDetection\x64\Debug\DepthDetection.exe
