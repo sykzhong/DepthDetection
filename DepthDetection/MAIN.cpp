@@ -1,9 +1,9 @@
 #include "stdafx.h"
-#include "DepthDetection.h"
+#include "FeatureMatch.h"
 
 int main()
 {
-	DepthDetection A;
+	FeatureMatch A;
 	A.inputImage();
 	A.surfMatch();
 	A.RANSACMatch();
