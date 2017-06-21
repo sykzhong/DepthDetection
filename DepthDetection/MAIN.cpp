@@ -1,12 +1,13 @@
 #include "stdafx.h"
 #include "FeatureMatch.h"
+#include "SurfMatch.h"
 
-#define TEST2
+#define TEST1
 
 #ifdef TEST1
 int main()
 {
-	FeatureMatch A;
+	SurfMatch A;
 	A.inputImage();
 	A.surfMatch();
 	A.RANSACMatch();

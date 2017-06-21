@@ -32,7 +32,7 @@ public:
 	void maskOutPoints(vector<Point2f>& p1, Mat& mask);
 	void maskOutColors(vector<Vec3b>& c1, Mat& mask);
 	void reconstruct(Mat& R1, Mat& T1, Mat& R2, Mat& T2, vector<Point2f>& p1, vector<Point2f>& p2, vector<Point3f>& structure);
-	void getObjpoints_Imgpoints();
+	void getObjpoints_Imgpoints(int index);			//意为择取第index幅图像的数据存入imagepoint与objectpoint
 	void savePoint2f();
 	void savePoint3f();
 
@@ -53,26 +53,4 @@ private:
 	vector<Mat> m_motions;
 	vector<Point3f> m_objectPoints;
 	vector<Point2f> m_imagePoints;
-
-	/************************/
-	Mat imgA;
-	Mat imgB;
-	vector<KeyPoint> keyA, keyB;
-	vector<Point2f> m_pointA, m_pointB;
-	vector<DMatch> good_matches;
-
-	Mat outimg;
-
-	Mat m_Fundamental;
-
-	// 这三个变量用于保存内点和匹配关系   
-	vector<Point2f> m_AInlier;
-	vector<Point2f> m_BInlier;
-	// 把内点转换为drawMatches可以使用的格式   
-	vector<KeyPoint> keyA_RANSAC;
-	vector<KeyPoint> keyB_RANSAC;
-	vector<DMatch> m_InlierMatches;
-
-	Mat R, T;			//syk：相机的变换矩阵？
-	Mat E;				//本征矩阵（Essential Matrix)
 };
