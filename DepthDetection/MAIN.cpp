@@ -2,7 +2,7 @@
 #include "FeatureMatch.h"
 #include "SurfMatch.h"
 
-#define TEST1
+#define TEST2
 
 #ifdef TEST1
 int main()
@@ -19,5 +19,6 @@ int main()
 	matcher.inputImage();
 	matcher.extractFeature();
 	matcher.matchFeatures();
+	matcher.initStructure();
 }
 #endif

@@ -265,40 +265,40 @@ void FeatureMatch::reconstruct(Mat& R1, Mat& T1, Mat& R2, Mat& T2, vector<Point2
 	//structure 中元素的个数即p的个数，存储的是point3f，即点的坐标
 }
 
-void FeatureMatch::getObjpoints_Imgpoints(int index)	
+void FeatureMatch::getObjpoints_Imgpoints(int match_index, int keypoint_index)
 {
 	m_objectPoints.clear();
 	m_imagePoints.clear();
-	vector<DMatch> matches = m_matches[index];
+	vector<DMatch> matches = m_matches[match_index];
 	for (int i = 0; i < matches.size(); i++)
 	{
 		int query_idx = matches[i].queryIdx;
 		int train_idx = matches[i].trainIdx;
 
-		int struct_idx = m_correspond_struct_idx[index][query_idx];
+		int struct_idx = m_correspond_struct_idx[match_index][query_idx];
 		if (struct_idx < 0)
 			continue;
 
 		m_objectPoints.push_back(m_structure[struct_idx]);
-		m_imagePoints.push_back(m_keyPoints[index][query_idx].pt);
+		m_imagePoints.push_back(m_keyPoints[keypoint_index][query_idx].pt);
 	}
 }
 
 void FeatureMatch::initStructure()
 {
 	vector<Point2f> p1, p2;
-	vector<Vec3b> colors;		//syk:用于存储三维图的彩色像素点像素？
+	//vector<Vec3b> colors;		//syk:用于存储三维图的彩色像素点像素？
 	vector<Vec3b> c2;
 	Mat R, T;	//旋转矩阵和平移向量（由相机二至相机一）
 	Mat mask;	//mask中大于零的点代表匹配点，等于零代表失配点
 	getMatchPoints(m_keyPoints[0], m_keyPoints[1], m_matches[0], p1, p2);
-	getMatchColors(m_colors[0], m_colors[1], m_matches[0], colors, c2);
+	getMatchColors(m_colors[0], m_colors[1], m_matches[0], m_structure_color, c2);
 
 	findTransform(p1, p2, R, T, mask);
 
 	maskOutPoints(p1, mask);
 	maskOutPoints(p2, mask);
-	maskOutColors(colors, mask);
+	maskOutColors(m_structure_color, mask);
 
 	Mat R0 = Mat::eye(3, 3, CV_64FC1);
 	Mat T0 = Mat::zeros(3, 1, CV_64FC1);
@@ -331,8 +331,9 @@ void FeatureMatch::initStructure()
 		m_correspond_struct_idx[1][matches[i].trainIdx] = idx;
 		++idx;
 	}
-	getObjpoints_Imgpoints(0);
-
+	getObjpoints_Imgpoints(0, 0);
+	savePoint2f();
+	savePoint3f();
 }
 
 void FeatureMatch::savePoint2f()
@@ -372,5 +373,93 @@ void FeatureMatch::savePoint3f()
 		outfile << "\n";
 	}
 	outfile.close();
+}
 
+void FeatureMatch::completeStructure()
+{
+	for (int i = 1; i < m_matches.size(); i++)
+	{
+		Mat r, R, T;		//r存储i与0之间的旋转关系，即与第一个相机（世界坐标）之间的关系
+		getObjpoints_Imgpoints(i, i + 1);
+		//求解变换矩阵
+		solvePnPRansac(m_objectPoints, m_imagePoints, K, noArray(), r, T);
+		//将旋转向量转换为旋转矩阵
+		Rodrigues(r, R);
+		//保存变换矩阵
+		m_rotations.push_back(R);
+		m_motions.push_back(T);
+
+		vector<Point2f> p1, p2;
+		vector<Vec3b> c1, c2;
+		getMatchPoints(m_keyPoints[i], m_keyPoints[i + 1], m_matches[i], p1, p2);
+		getMatchColors(m_colors[i], m_colors[i + 1], m_matches[i], c1, c2);
+
+		vector<Point3f> next_structure;
+		reconstruct(m_rotations[i], m_motions[i], R, T, p1, p2, next_structure);
+		fusionStructure(i, next_structure, c1);
+	}
+}
+
+void FeatureMatch::fusionStructure(int match_index, vector<Point3f> next_structure, vector<Vec3b> next_colors)
+{
+	vector<DMatch> matches = m_matches[match_index];
+	for (int i = 0; i < matches.size(); i++)
+	{
+		int query_idx = matches[i].queryIdx;
+		int train_idx = matches[i].trainIdx;
+
+		vector<int> &struct_indices = m_correspond_struct_idx[i];
+		vector<int> &next_struct_indices = m_correspond_struct_idx[i + 1];
+
+		int struct_idx = struct_indices[query_idx];
+		if (struct_idx >= 0)		//若该点在空间中已经存在，则这对匹配点对应的空间点应该是同一个，索引要相同
+		{
+			next_struct_indices[train_idx] = struct_idx;
+			continue;
+		}
+
+		//若该点在空间中未存在，将该点加入到结构中，且这对匹配点的空间点索引都为新加入的点的索引
+		m_structure.push_back(next_structure[i]);
+		m_structure_color.push_back(next_colors[i]);
+		struct_indices[query_idx] = next_struct_indices[train_idx] = m_structure.size() - 1;
+	}
+}
+
+void FeatureMatch::saveStructure(const string &filename)
+{
+	int n = (int)m_rotations.size();
+
+	FileStorage fs(filename, FileStorage::WRITE);
+	fs << "Camera Count" << n;
+	fs << "Point Count" << (int)m_structure.size();
+
+	fs << "Rotations" << "[";
+	for (size_t i = 0; i < n; ++i)
+	{
+		fs << m_rotations[i];
+	}
+	fs << "]";
+
+	fs << "Motions" << "[";
+	for (size_t i = 0; i < n; ++i)
+	{
+		fs << m_motions[i];
+	}
+	fs << "]";
+
+	fs << "Points" << "[";
+	for (size_t i = 0; i < m_structure.size(); ++i)
+	{
+		fs << m_structure[i];
+	}
+	fs << "]";
+
+	fs << "Colors" << "[";
+	for (size_t i = 0; i < m_structure_color.size(); ++i)
+	{
+		fs << m_structure_color[i];
+	}
+	fs << "]";
+
+	fs.release();
 }
