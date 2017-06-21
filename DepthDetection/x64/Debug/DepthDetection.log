@@ -1,3 +1,8 @@
-﻿  FeatureMatch.cpp
-e:\cloud\research\vision\depthdetection\depthdetection\featurematch.cpp(119): warning C4244: “初始化”: 从“int”转换到“float”，可能丢失数据
+﻿  MAIN.cpp
+  FeatureMatch.cpp
+e:\cloud\research\vision\depthdetection\depthdetection\featurematch.cpp(11): warning C4838: 从“double”转换到“float”需要收缩转换
+e:\cloud\research\vision\depthdetection\depthdetection\featurematch.cpp(11): warning C4305: “初始化”: 从“double”到“float”截断
+e:\cloud\research\vision\depthdetection\depthdetection\featurematch.cpp(53): warning C4244: “参数”: 从“float”转换到“int”，可能丢失数据
+e:\cloud\research\vision\depthdetection\depthdetection\featurematch.cpp(481): warning C4244: “初始化”: 从“int”转换到“float”，可能丢失数据
+  正在生成代码...
   DepthDetection.vcxproj -> E:\Cloud\Research\Vision\DepthDetection\x64\Debug\DepthDetection.exe

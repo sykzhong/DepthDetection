@@ -1,3 +1,4 @@
+#include "stdafx.h"
 #include "GlobalMethod.h"
 
 void GlobalMethod::getFileNames(string dir_name, vector<string> & names)
